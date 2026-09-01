@@ -62,19 +62,19 @@ class FallPredictor:
         self.model = Simple3DCNN().to(self.device)
         self.model.load_state_dict(torch.load(model_path, map_location=self.device, weights_only=False))
         self.model.eval()
-        print(f"✅ Model loaded: {model_path}")
+        print(f"Model loaded: {model_path}")
     
     def predict_single_video(self, video_path: str, threshold: float = 0.5):
         """Predict fall/no-fall on one video. Returns (prediction, confidence)."""
         
         if not os.path.exists(video_path):
-            print(f"❌ Video not found: {video_path}")
-            print("Usage: python predict_fall.py path/to/real/video.mp4")
-            return None, 0.0
+        print(f"Video not found: {video_path}")
+        print("Usage: python predict_fall.py path/to/video.mp4")
+        return None, 0.0
 
         
         
-        print(f"🎥 Analyzing: {video_path}")
+        print(f"Analyzing: {video_path}")
         clip_np = load_clip(video_path)
         clip = torch.tensor(clip_np).permute(3, 0, 1, 2).unsqueeze(0).float() / 255.0
         clip = clip.to(self.device)
@@ -83,7 +83,7 @@ class FallPredictor:
             output = self.model(clip)
             probs = torch.softmax(output, dim=1)[0]
             fall_prob = probs[1].item()
-            pred = "FALL ⚠️" if fall_prob > threshold else "No Fall ✅"
+            pred = "FALL" if fall_prob > threshold else "No Fall"
         
         print(f"Prediction: {pred}")
         print(f"Fall probability: {fall_prob:.3f}")
@@ -104,7 +104,7 @@ class FallPredictor:
         
         df = pd.DataFrame(results)
         df.to_csv('predictions.csv', index=False)
-        print(f"\n📊 Results saved: predictions.csv")
+        print(f"\nResults saved: predictions.csv")
         print(df)
         return df
 

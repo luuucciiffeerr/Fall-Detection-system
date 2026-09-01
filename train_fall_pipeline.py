@@ -34,27 +34,27 @@ LR = 1e-4
 
 def ensure_unzipped(zip_path: str, extract_root: str) -> str:
     if os.path.exists(extract_root):
-        print(f"✓ Using existing {extract_root}")
+        print(f"Using existing {extract_root}")
         return extract_root
     
     os.makedirs(extract_root, exist_ok=True)
-    print(f"📦 Extracting {zip_path}...")
+    print(f"Extracting {zip_path}...")
     with zipfile.ZipFile(zip_path, "r") as zf:
         zf.extractall(extract_root)
-    print("✓ Extraction complete")
+    print("Extraction complete")
     return extract_root
 
 
 def build_videos_csv(data_root: str, csv_path: str):
     """Walk dataset, find videos, extract metadata, save to CSV."""
     if os.path.exists(csv_path):
-        print(f"✓ Using existing {csv_path}")
+        print(f"Using existing {csv_path}")
         return
     
     video_paths = []
     fall_count = nofall_count = 0
     
-    print("🔍 Scanning videos...")
+    print("Scanning videos...")
     for root, _, files in tqdm(os.walk(data_root), desc="Folders"):
         for file in files:
             if file.lower().endswith((".mp4", ".avi", ".mov", ".mkv")):
@@ -70,10 +70,10 @@ def build_videos_csv(data_root: str, csv_path: str):
                 if label is not None:
                     video_paths.append((full_path, label))
     
-    print(f"📊 Found {len(video_paths)} videos: {fall_count} Fall, {nofall_count} No_Fall")
+    print(f"Found {len(video_paths)} videos: {fall_count} Fall, {nofall_count} No_Fall")
     
     data = []
-    print("📹 Reading metadata...")
+    print("Reading metadata...")
     for video_path, label in tqdm(video_paths, desc="Videos"):
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
@@ -94,14 +94,14 @@ def build_videos_csv(data_root: str, csv_path: str):
         "filename", "path", "num_frames", "fps", "width", "height", "duration_sec", "label"
     ])
     df.to_csv(csv_path, index=False)
-    print(f"💾 Saved {csv_path} ({len(df)} videos)")
+    print(f"Saved {csv_path} ({len(df)} videos)")
     print("Class balance:", df['label'].value_counts().to_dict())
     
 
 def split_datasets(videos_csv: str):
     """Create train/val/test CSVs from videos_info.csv."""
     if all(os.path.exists(p) for p in [TRAIN_CSV, VAL_CSV, TEST_CSV]):
-        print("✓ Using existing splits")
+        print("Using existing splits")
         return
     
     df = pd.read_csv(videos_csv)
@@ -112,7 +112,7 @@ def split_datasets(videos_csv: str):
     val_df.to_csv(VAL_CSV, index=False)
     test_df.to_csv(TEST_CSV, index=False)
     
-    print("📈 Splits created:")
+    print("Splits created:")
     print(f"  Train: {len(train_df)} ({train_df['label'].mean():.1%} fall)")
     print(f"  Val:   {len(val_df)} ({val_df['label'].mean():.1%} fall)") 
     print(f"  Test:  {len(test_df)} ({test_df['label'].mean():.1%} fall)")
@@ -235,7 +235,7 @@ def evaluate_model(model, test_loader, device):
     acc = accuracy_score(all_labels, all_preds)
     f1 = f1_score(all_labels, all_preds, average='weighted')
     
-    print("\n📊 Test Results:")
+    print("\nTest Results:")
     print(f"Accuracy: {acc:.4f}")
     print(f"F1 Score:  {f1:.4f}")
     print("\nDetailed Report:")
@@ -251,13 +251,13 @@ def evaluate_model(model, test_loader, device):
     plt.xlabel('Predicted Label')
     plt.savefig(CONFUSION_PLOT, dpi=150, bbox_inches='tight')
     plt.close()
-    print(f"💾 Confusion matrix saved: {CONFUSION_PLOT}")
+    print(f"Confusion matrix saved: {CONFUSION_PLOT}")
     
     return acc, f1
 
 
 def main():
-    print("🚀 Fall Detection Training Pipeline")
+    print("Fall Detection Training Pipeline")
     
     # 1. Setup data
     if not os.path.exists(ZIP_PATH):
@@ -278,18 +278,18 @@ def main():
     
     # 3. Model
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"🖥️  Using device: {device}")
+    print(f"Using device: {device}")
     
     model = Simple3DCNN().to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=LR)
     
     if os.path.exists(MODEL_PATH):
-        print(f"🔄 Loading existing model from {MODEL_PATH}")
+        print(f"Loading existing model from {MODEL_PATH}")
         model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
     
     # 4. Train
-    print("\n🎯 Starting training...")
+    print("\nStarting training...")
     train_losses, train_accs = [], []
     val_losses, val_accs = [], []
     
@@ -305,7 +305,7 @@ def main():
     
     # 5. Save model
     torch.save(model.state_dict(), MODEL_PATH)
-    print(f"💾 Model saved: {MODEL_PATH}")
+    print(f"Model saved: {MODEL_PATH}")
     
     # 6. Training charts
     plt.figure(figsize=(12,4))
@@ -322,11 +322,11 @@ def main():
     plt.legend()
     plt.savefig(METRICS_PLOT, dpi=150, bbox_inches='tight')
     plt.close()
-    print(f"📈 Training charts saved: {METRICS_PLOT}")
+    print(f"Training charts saved: {METRICS_PLOT}")
     
     # 7. Final test evaluation
     test_acc, test_f1 = evaluate_model(model, test_loader, device)
-    print("✅ Pipeline complete! Commit these files to GitHub:")
+    print("Pipeline complete! Commit these files to GitHub:")
     print("   videos_info.csv, train.csv, val.csv, test.csv")
     print("   simple3dcnn_fall.pth, *.png")
 
